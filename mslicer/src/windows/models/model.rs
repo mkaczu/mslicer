@@ -10,19 +10,19 @@ use egui::{
     TextEdit, Ui, UiBuilder, Widget, text::CCursorRange, vec2,
 };
 use egui_phosphor::regular::{
-    ARROW_LINE_DOWN, ARROWS_COUNTER_CLOCKWISE, COPY, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH,
+    ARROW_LINE_DOWN, ARROWS_COUNTER_CLOCKWISE, COPY, CUBE, CURSOR_TEXT, DICE_THREE, EYE, EYE_SLASH,
     FLOPPY_DISK_BACK, FOLDER_DASHED, INFO, LINK_BREAK, LINK_SIMPLE, SUBTRACT_SQUARE, SWAP, TRASH,
-    WARNING,
+    VECTOR_THREE, WARNING,
 };
 use nalgebra::Vector3;
 
 use crate::{
-    app::{App, history::ModelAction},
+    app::{App, config::ui::B_PER_MIB, history::ModelAction},
     project::{
         Collection, RenameState,
         model::{MeshUnit, MeshWarnings},
     },
-    task::{FileDialog, MeshSave, ReloadModel, SplitBodies},
+    task::{FileDialog, FlipWinding, MeshSave, ReloadModel, SplitBodies},
     ui::components::{
         being_edited, grid, history_tracked_model, vec3_dragger, vec3_dragger_proportional,
     },
@@ -178,13 +178,6 @@ pub fn model_properties(
             model.update_oob(platform);
         }
 
-        if shortcut(
-            ui.button(concatcp!(SUBTRACT_SQUARE, " Split Bodies")),
-            SPLIT_SHORTCUT,
-        ) {
-            app.tasks.add(SplitBodies::new(model));
-        }
-
         if ui.button(concatcp!(SWAP, " Replace")).clicked() {
             let (id, name) = (model.id, model.name.clone());
             app.tasks.add(FileDialog::pick_file(
@@ -205,17 +198,39 @@ pub fn model_properties(
             app.tasks.add(task);
         }
 
-        // todo: dropdown for stl or obj, then chance MeshSave::new to take a
-        // Format to apply the correct file extension before saving
-        if ui.button(concatcp!(FLOPPY_DISK_BACK, " Export")).clicked() {
-            let mesh = model.mesh.inner().clone();
-            app.tasks.add(FileDialog::save_file(
-                ("Mesh", &["stl", "obj"]),
-                |_app, path, tasks| {
-                    tasks.push(Box::new(MeshSave::new(path.to_path_buf(), mesh)));
-                },
-            ));
-        }
+        ui.menu_button(concatcp!(CUBE, " Mesh"), |ui| {
+            if shortcut(
+                ui.button(concatcp!(SUBTRACT_SQUARE, " Split Bodies")),
+                SPLIT_SHORTCUT,
+            ) {
+                app.tasks.add(SplitBodies::new(model));
+            }
+
+            if ui
+                .button(concatcp!(VECTOR_THREE, " Flip Winding Order"))
+                .clicked()
+            {
+                app.tasks.add(FlipWinding::new(model));
+            }
+
+            ui.menu_button(concatcp!(FLOPPY_DISK_BACK, " Export"), |ui| {
+                for format in mesh_format::Format::ALL {
+                    if ui
+                        .button(format!("{} ({})", format.name(), format.extension()))
+                        .clicked()
+                    {
+                        let mesh = model.mesh.inner().clone();
+                        app.tasks.add(FileDialog::save_file(
+                            ("Mesh", &[format.extension()]),
+                            move |_app, path, tasks| {
+                                let path = path.with_extension(format.extension());
+                                tasks.push(Box::new(MeshSave::new(path, format, mesh)));
+                            },
+                        ));
+                    }
+                }
+            });
+        });
     });
 
     CollapsingHeader::new("Transform")
@@ -347,7 +362,11 @@ pub fn model_properties(
 
             ui.label("Faces");
             ui.horizontal(|ui| {
-                ui.label(separate_thousands(model.mesh.face_count()));
+                ui.label(format!(
+                    "{} ({:.2} MiB)",
+                    separate_thousands(model.mesh.face_count()),
+                    model.mesh.memory_size() as f32 / B_PER_MIB as f32
+                ));
                 ui.take_available_width();
             });
             ui.end_row();

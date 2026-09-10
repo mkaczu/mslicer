@@ -1,5 +1,6 @@
 use std::{fs::File, io::Write};
 
+use common::units::Mircometer;
 use egui::{Align, Button, ComboBox, DragValue, Layout, Ui, Widget, vec2};
 use egui_extras::{Column, TableBuilder};
 use egui_phosphor::regular::{BOUNDING_BOX, EYE, INFO, TRASH};
@@ -16,6 +17,7 @@ use crate::{
 };
 
 pub const DESCRIPTION: &str = "Use your MSLA resin printer to expose UV sensitive photoresist or soldermask for PCB manufacturing.";
+pub const DOCS_PAGE: &str = "https://mslicer.com/docs/pcb-photolighography";
 
 pub fn open(app: &mut App) {
     app.popup
@@ -23,7 +25,14 @@ pub fn open(app: &mut App) {
 }
 
 fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
-    ui.label(DESCRIPTION);
+    ui.horizontal_wrapped(|ui| {
+        ui.spacing_mut().item_spacing.x = 0.0;
+
+        ui.label(DESCRIPTION);
+        ui.label(" See the ");
+        ui.hyperlink_to("PCB Photolighography", DOCS_PAGE);
+        ui.label(" docs for more info information.");
+    });
     ui.add_space(8.0);
 
     let slicing = app.is_slicing();
@@ -139,6 +148,16 @@ fn interface(app: &mut PopupApp, ui: &mut Ui) -> bool {
                 ui.selectable_value(&mut tool.invert, false, "Negative");
                 ui.selectable_value(&mut tool.invert, true, "Positive");
             });
+        ui.end_row();
+
+        ui.label("Circle Error");
+        tool.max_circle_error.with::<Mircometer>(|x| {
+            DragValue::new(x)
+                .suffix(" μm")
+                .speed(1.0)
+                .range(1.0..=f32::MAX)
+                .ui(ui);
+        });
         ui.end_row();
     });
 

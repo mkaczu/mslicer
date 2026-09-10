@@ -5,8 +5,7 @@ Feel free to help out :eyes:.
 
 ## Bugs
 
-- correctly calculate print time with exposure overrides
-- correctly calculate volume with non-uniform layer height
+- no way to configure quick layout spacing
 
 ## Features
 
@@ -35,13 +34,7 @@ Feel free to help out :eyes:.
 - task cancellation mechanism
 - release updated msla_format
 - mesh repair tool/button
-  - non-welded verts
-  - holes
-  - inconstant winding order
-  - unconnected verts
-  - non-manifold (not sure how to fix this thb)
-  - repeated faces?
-- add button to flip winding order (rip flip normals)
+- simd for mesh-plane intersection?
 
 ## Documentation
 
@@ -51,6 +44,7 @@ Feel free to help out :eyes:.
   - changed exposure config component
   - change AA config
 - document on generating and printing phonograph records
+- add phosphor icons in doc pages (like i did on the pcb photolithography page)
 
 ## Maybe
 
@@ -71,3 +65,23 @@ Features that would be cool, but are a bit out of scope for now.
   - mslicer_core (app + project + task?)
   - mslicer_render (render)
   - mslicer_ui (window + ui)
+
+## Defective Meshes
+
+> when do non-manifold meshes slice correctly?
+
+- non-welded verts?
+- hole has no height (only if not rotated in XY)
+
+> test models
+
+- capybara
+
+> types of defects
+
+- non-welded verts
+- holes
+- inconstant winding order
+- unconnected verts
+- non-manifold (not sure how to fix this thb)
+- repeated faces?
